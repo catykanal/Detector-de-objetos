@@ -28,3 +28,5 @@ Necesito que crees un programa en ide arduino para un circuito que tiene un sens
 
 ![photo_5012842260752084418_y](https://github.com/user-attachments/assets/c6068f4c-711a-49a3-aa0e-13f57714f128)
 
+Link para generar el ID del chat
+https://api.telegram.org/botTU_TOKEN_AQUI/getUpdates
