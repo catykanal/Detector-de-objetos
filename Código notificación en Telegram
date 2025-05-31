@@ -1,0 +1,103 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+
+// Definición de pines (existente)
+const int trigPin = 9;    
+const int echoPin = 10;   
+const int ledPin = 8;     
+
+// Configuración WiFi y Telegram (modificado)
+const char* ssid = "Ck Red";
+const char* password = "balambalam";
+const String botToken = "8123816132:AAGRNVa6B8WS6Ar22RSKnTtoYalX8bPMTSs";
+const String chatId = "-1002345900797";
+
+// Variables para el sensor (existente)
+long duration;
+int distance;
+bool pausaActiva = false;
+unsigned long tiempoPausa = 0;
+
+// Cliente seguro para Telegram (existente)
+WiFiClientSecure client;
+
+void setup() {
+  // Configuración inicial existente
+  pinMode(trigPin, OUTPUT); 
+  pinMode(echoPin, INPUT);  
+  pinMode(ledPin, OUTPUT);  
+  digitalWrite(ledPin, LOW); 
+  Serial.begin(115200); 
+
+  // Configuración WiFi (existente)
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi conectado");
+  
+  client.setInsecure();
+}
+
+// Función para enviar notificaciones (existente)
+void sendTelegramMessage(String message) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient https;
+    String url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
+    
+    https.begin(client, url);
+    https.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    
+    String postData = "chat_id=" + chatId + "&text=" + message;
+    int httpCode = https.POST(postData);
+    
+    if (httpCode > 0) {
+      Serial.print("Mensaje enviado: ");
+      Serial.println(message);
+    }
+    
+    https.end();
+  }
+}
+
+void loop() {
+  // Lógica existente sin modificaciones
+  if(pausaActiva && (millis() - tiempoPausa) < 4000) {
+    return; 
+  }
+  pausaActiva = false; 
+  
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2;
+  
+  Serial.print("Distancia: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  // Lógica modificada (solo notificación en 16-40 cm)
+  if (distance > 0 && distance <= 18) {
+    digitalWrite(ledPin, HIGH);
+    delay(50);
+  } 
+  else if (distance > 18 && distance <= 40) {
+    digitalWrite(ledPin, HIGH);
+    sendTelegramMessage("🔔 Guau Guau ya NO tengo comida!!! " + String(distance) + "cm"); // Notificación única
+    tiempoPausa = millis();
+    pausaActiva = true;
+    delay(1000);
+    digitalWrite(ledPin, LOW);
+    delay(10000);
+  } 
+  else {
+    digitalWrite(ledPin, HIGH);
+    delay(50);
+  }
+}
